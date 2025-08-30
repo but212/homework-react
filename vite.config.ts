@@ -18,4 +18,6 @@ export default defineConfig({
   //   target: 'esnext', // 최신 ES 문법으로 빌드
   //   sourcemap: true   // 소스맵 생성 (디버깅용)
   // },
+
+  base: "/homework-react"
 });
