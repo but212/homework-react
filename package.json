@@ -2,6 +2,7 @@
   "name": "homework-react",
   "type": "module",
   "private": true,
+  "homepage": "https://but212.github.io/homework-react",
   "devDependencies": {
     "@types/bun": "latest",
     "@types/react": "^19.1.10",
