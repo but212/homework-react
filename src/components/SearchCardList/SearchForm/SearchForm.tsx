@@ -1,6 +1,5 @@
 import { debounce } from '@/lib/utils';
 import { useEffect, useMemo, useState } from 'react';
-import './SearchForm.css';
 
 interface SearchFormProps {
   onSearch: (query: string) => void;

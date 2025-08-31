@@ -1,6 +1,5 @@
 import { cn } from '@/lib/utils';
 import { type CardData } from '../../../lib/week3/card-data';
-import './Card.css';
 
 const Card = ({ card }: { card: CardData }) => {
   return (

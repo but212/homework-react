@@ -1,6 +1,5 @@
 import { type CardData } from '../../../lib/week3/card-data';
 import Card from '../Card/Card';
-import './SearchedList.css';
 
 const SearchedList = ({ cards }: { cards: CardData[] }) => {
   return (

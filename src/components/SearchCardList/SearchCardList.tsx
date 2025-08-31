@@ -3,7 +3,6 @@ import { useCallback, useState } from 'react';
 import data from '../../dummy_data/week3/data.json';
 import { type CardData } from '../../lib/week3/card-data';
 import searchCards from '../../lib/week3/search-cards';
-import './SearchCardList.css';
 import SearchForm from './SearchForm/SearchForm';
 import SearchedList from './SearchedList/SearchedList';
 
