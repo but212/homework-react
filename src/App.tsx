@@ -1,11 +1,15 @@
+import { BrowserRouter, Route, Routes } from 'react-router-dom';
+import Home from './pages/home';
+import Week3 from './pages/week-3';
+
 const App = ({ title }: { title: string }) => {
   return (
-    <>
-      <h1>{title}</h1>
-      <ul>
-        <li><a href="/src/pages/week-3.html">검색 리스트 만들기</a></li>
-      </ul>
-    </>
+    <BrowserRouter>
+      <Routes>
+        <Route path="/" element={<Home />} />
+        <Route path="/week-3" element={<Week3 />} />
+      </Routes>
+    </BrowserRouter>
   );
 };
 
