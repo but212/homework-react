@@ -19,7 +19,6 @@ const SearchForm = ({ onSearch, searchQuery }: SearchFormProps) => {
 
   useEffect(() => {
     debouncedSearch(inputValue);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [inputValue]);
 
   useEffect(() => {
