@@ -128,7 +128,7 @@ export default defineConfig({
     // strictPort: true, // 포트가 사용 중일 때 다른 포트로 변경하지 않음
     // open: true, // 서버 시작 시 브라우저 자동 열기
   },
-  // build: { 
+  // build: {
   //   target: 'esnext', // 최신 ES 문법으로 빌드
   //   sourcemap: true   // 소스맵 생성 (디버깅용)
   // },
@@ -448,7 +448,6 @@ import { omit } from '@/lib/utils';
 
 const user = { id: 1, name: 'John', email: 'john@example.com', password: 'secret' };
 const safeUser = omit(user, ['password']); // { id: 1, name: 'John', email: 'john@example.com' }
-
 ```
 
 해당 함수를 통해 이 템플릿을 적용한 프로젝트에서 더욱 원활한 개발이 가능합니다.
@@ -457,17 +456,17 @@ const safeUser = omit(user, ['password']); // { id: 1, name: 'John', email: 'joh
 
 아래 표는 위 유틸 함수들을 간단히 요약한 것입니다.
 
-| 함수       | 파일 경로                   | 목적                           | 시그니처                                                                  | 간단 사용 예시                                    |
-|------------|----------------------------|--------------------------------|---------------------------------------------------------------------------|---------------------------------------------------|
-| `cn`       | `src/lib/utils/cn.ts`      | 클래스 이름 병합/중복 제거     | `cn(...inputs: ClassValue[]): string`                                    | `cn('p-4 text-sm', 'p-2 text-lg') => 'p-2 text-lg'` |
-| `getEnv`   | `src/lib/utils/env.ts`     | 환경변수 안전 조회 (기본값 지원) | `getEnv<K extends keyof ImportMetaEnv>(key: K, fallback = ''): string`   | `getEnv('VITE_API_URL', 'https://api.example.com')` |
-| `sleep`    | `src/lib/utils/async.ts`   | 지연(대기) Promise 반환        | `(ms: number) => Promise<void>`                                           | `await sleep(300)`                                |
-| `debounce` | `src/lib/utils/async.ts`   | 연속 호출 방지(마지막 호출만 실행) | `debounce<T extends (...args:any[])=>void>(fn: T, wait = 300)`           | `const onInput = debounce(v => console.log(v), 500)` |
-| `throttle` | `src/lib/utils/async.ts`   | 일정 간격으로만 실행           | `throttle<T extends (...args:any[])=>void>(fn: T, wait = 300)`           | `const onScroll = throttle(() => {}, 100)`       |
-| `retry`    | `src/lib/utils/async.ts`   | 실패 시 재시도 로직            | `retry<T>(fn: () => Promise<T>, times = 3, delay = 300): Promise<T>`     | `await retry(fetchData, 5, 1000)`                |
-| `clamp`    | `src/lib/utils/object.ts`  | 값 범위 제한                   | `(v: number, min: number, max: number) => number`                        | `clamp(150, 0, 100) => 100`                      |
-| `pick`     | `src/lib/utils/object.ts`  | 객체에서 특정 키만 선택        | `pick<T, K extends keyof T>(obj: T, keys: ReadonlyArray<K>): Pick<T, K>` | `pick(user, ['id', 'name'])`                     |
-| `omit`     | `src/lib/utils/object.ts`  | 객체에서 특정 키 제외          | `omit<T, K extends keyof T>(obj: T, keys: ReadonlyArray<K>): Omit<T, K>` | `omit(user, ['password'])`                       |
+| 함수       | 파일 경로                 | 목적                               | 시그니처                                                                 | 간단 사용 예시                                       |
+| ---------- | ------------------------- | ---------------------------------- | ------------------------------------------------------------------------ | ---------------------------------------------------- |
+| `cn`       | `src/lib/utils/cn.ts`     | 클래스 이름 병합/중복 제거         | `cn(...inputs: ClassValue[]): string`                                    | `cn('p-4 text-sm', 'p-2 text-lg') => 'p-2 text-lg'`  |
+| `getEnv`   | `src/lib/utils/env.ts`    | 환경변수 안전 조회 (기본값 지원)   | `getEnv<K extends keyof ImportMetaEnv>(key: K, fallback = ''): string`   | `getEnv('VITE_API_URL', 'https://api.example.com')`  |
+| `sleep`    | `src/lib/utils/async.ts`  | 지연(대기) Promise 반환            | `(ms: number) => Promise<void>`                                          | `await sleep(300)`                                   |
+| `debounce` | `src/lib/utils/async.ts`  | 연속 호출 방지(마지막 호출만 실행) | `debounce<T extends (...args:any[])=>void>(fn: T, wait = 300)`           | `const onInput = debounce(v => console.log(v), 500)` |
+| `throttle` | `src/lib/utils/async.ts`  | 일정 간격으로만 실행               | `throttle<T extends (...args:any[])=>void>(fn: T, wait = 300)`           | `const onScroll = throttle(() => {}, 100)`           |
+| `retry`    | `src/lib/utils/async.ts`  | 실패 시 재시도 로직                | `retry<T>(fn: () => Promise<T>, times = 3, delay = 300): Promise<T>`     | `await retry(fetchData, 5, 1000)`                    |
+| `clamp`    | `src/lib/utils/object.ts` | 값 범위 제한                       | `(v: number, min: number, max: number) => number`                        | `clamp(150, 0, 100) => 100`                          |
+| `pick`     | `src/lib/utils/object.ts` | 객체에서 특정 키만 선택            | `pick<T, K extends keyof T>(obj: T, keys: ReadonlyArray<K>): Pick<T, K>` | `pick(user, ['id', 'name'])`                         |
+| `omit`     | `src/lib/utils/object.ts` | 객체에서 특정 키 제외              | `omit<T, K extends keyof T>(obj: T, keys: ReadonlyArray<K>): Omit<T, K>` | `omit(user, ['password'])`                           |
 
 ## 느낀점
 

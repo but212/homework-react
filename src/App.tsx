@@ -6,8 +6,8 @@ const App = ({ title }: { title: string }) => {
   return (
     <BrowserRouter>
       <Routes>
-        <Route path="/" element={<Home />} />
-        <Route path="/week-3" element={<Week3 />} />
+        <Route path='/' element={<Home />} />
+        <Route path='/week-3' element={<Week3 />} />
       </Routes>
     </BrowserRouter>
   );
