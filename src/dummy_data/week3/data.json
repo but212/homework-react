@@ -1,0 +1,72 @@
+[
+  {
+    "id": 1,
+    "title": "React 톺아보기",
+    "description": "최신 React로 프론트엔드의 매력을 쉽고 재미있게 배워보세요.",
+    "tags": ["react", "javascript", "typescript"],
+    "image": "/images/week3/react.svg"
+  },
+  {
+    "id": 2,
+    "title": "Rust 입문",
+    "description": "Rust를 통해 안정성과 성능을 동시에 경험할 수 있는 프로그래밍 언어를 배워보세요!",
+    "tags": ["rust", "programming", "language"],
+    "image": "/images/week3/rust.svg"
+  },
+  {
+    "id": 3,
+    "title": "Python 입문",
+    "description": "Python을 통해 쉽고 재미있게 프로그래밍을 배워보세요!",
+    "tags": ["python", "programming", "language"],
+    "image": "/images/week3/python.svg"
+  },
+  {
+    "id": 4,
+    "title": "C++ 입문",
+    "description": "C++를 강력하고 효율적인 프로그래밍 언어를 배워보세요!",
+    "tags": ["c++", "programming", "language"],
+    "image": "/images/week3/cplusplus.svg"
+  },
+  {
+    "id": 5,
+    "title": "Vue.js로 웹 개발",
+    "description": "Vue.js를 활용한 빠르고 효율적인 웹 프론트엔드 개발을 경험해보세요.",
+    "tags": ["vue", "javascript", "frontend"],
+    "image": "/images/week3/vue.svg"
+  },
+  {
+    "id": 6,
+    "title": "Node.js 백엔드 실전",
+    "description": "Node.js로 강력한 백엔드 서버를 구축하는 방법을 단계별로 배워보세요.",
+    "tags": ["node.js", "javascript", "backend"],
+    "image": "/images/week3/node.svg"
+  },
+  {
+    "id": 7,
+    "title": "Go 언어 마스터",
+    "description": "Go 언어의 간결함과 성능을 경험하며 시스템 프로그래밍 실력을 키워보세요.",
+    "tags": ["go", "golang", "programming"],
+    "image": "/images/week3/go.svg"
+  },
+  {
+    "id": 8,
+    "title": "데이터 분석 with Pandas",
+    "description": "Pandas와 Python을 통해 데이터 분석의 기초부터 실전 활용까지 마스터하세요.",
+    "tags": ["python", "pandas", "data analysis"],
+    "image": "/images/week3/pandas.svg"
+  },
+  {
+    "id": 9,
+    "title": "HTML & CSS 완벽 가이드",
+    "description": "웹 개발의 시작, HTML과 CSS를 기초부터 실무까지 한 번에 학습하세요.",
+    "tags": ["html", "css", "web"],
+    "image": "/images/week3/htmx.svg"
+  },
+  {
+    "id": 10,
+    "title": "TypeScript로 배우는 OOP",
+    "description": "TypeScript와 함께 객체지향 프로그래밍의 원리를 쉽고 체계적으로 익혀보세요.",
+    "tags": ["typescript", "oop", "javascript"],
+    "image": "/images/week3/typescript.svg"
+  }
+]

@@ -11,14 +11,24 @@ export const sleep = (ms: number) => new Promise<void>(res => setTimeout(res, ms
  * 함수 호출을 지연시켜 연속된 호출을 방지하는 디바운스 함수를 생성합니다.
  * @param fn 디바운스할 함수
  * @param wait 대기 시간(밀리초), 기본값 300ms
- * @returns 디바운스된 함수
+ * @returns 디바운스된 함수 (cancel 메서드 포함)
  */
 export function debounce<T extends (...args: any[]) => void>(fn: T, wait = 300) {
   let t: ReturnType<typeof setTimeout> | null = null;
-  return (...args: Parameters<T>) => {
+
+  const debouncedFn = (...args: Parameters<T>) => {
     if (t) clearTimeout(t);
     t = setTimeout(() => fn(...args), wait);
   };
+
+  debouncedFn.cancel = () => {
+    if (t) {
+      clearTimeout(t);
+      t = null;
+    }
+  };
+
+  return debouncedFn;
 }
 
 /**

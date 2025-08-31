@@ -4,11 +4,13 @@ import './SearchedList.css';
 
 const SearchedList = ({ cards }: { cards: CardData[] }) => {
   return (
-    <>
+    <ul className='flex flex-col gap-4'>
       {cards.map(card => (
-        <Card key={card.id} card={card} />
+        <li key={card.id}>
+          <Card card={card} />
+        </li>
       ))}
-    </>
+    </ul>
   );
 };
 

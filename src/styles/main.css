@@ -1,2 +1,7 @@
 @import './common/index.css';
 @import 'tailwindcss';
+
+button,
+a {
+  cursor: pointer;
+}
