@@ -1,10 +1,10 @@
-import './styles/App.css';
-
-const App = () => {
+const App = ({ title }: { title: string }) => {
   return (
     <>
-      <h1 className='text-3xl font-bold'>템플릿 페이지</h1>
-      <p className='text-xl'>변경사항을 적용해보세요.</p>
+      <h1>{title}</h1>
+      <ul>
+        <li><a href="/src/pages/week-3.html">검색 리스트 만들기</a></li>
+      </ul>
     </>
   );
 };
