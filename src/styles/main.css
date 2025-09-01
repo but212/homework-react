@@ -1,5 +1,12 @@
-@import './common/index.css';
-@import 'tailwindcss';
+@layer theme, base, components, utilities;
+
+@import 'tailwindcss/theme.css' layer(theme);
+@import 'tailwindcss/preflight.css' layer(base);
+@import 'tailwindcss/utilities.css' layer(utilities);
+
+@import './common/_variables.css' layer(theme);
+@import './common/_a11y.css' layer(utilities);
+
 
 button,
 a {
