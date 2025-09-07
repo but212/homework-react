@@ -82,6 +82,10 @@ const Week4 = () => {
           홈
         </Link>
         {user ? (
+          <>
+          <Link to='/week-4/profile' aria-label='프로필' className='p-2 rounded hover:bg-gray-200 transition'>
+            프로필
+          </Link>
           <button
             type='button'
             onClick={async () => {
@@ -98,6 +102,7 @@ const Week4 = () => {
           >
             로그아웃
           </button>
+          </>
         ) : (
           <>
             <Link to='/week-4/sign-up' aria-label='회원가입' className='p-2 rounded hover:bg-gray-200 transition'>
