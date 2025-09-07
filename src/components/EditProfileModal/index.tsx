@@ -139,8 +139,6 @@ const EditProfileModal = ({ isOpen, onClose, user }: Props) => {
         console.error('사용자 정보 새로고침 실패:', error);
       }
 
-      window.location.reload();
-
       onClose();
     }
   };

@@ -136,16 +136,12 @@ export const useAuth = () => {
         }
 
         if (session?.user) {
-          if (!user) {
-            const profile = await fetchUserProfile(session.user.id);
-            if (profile) {
-              setUser(profile);
-            }
+          const profile = await fetchUserProfile(session.user.id);
+          if (profile) {
+            setUser(profile);
           }
         } else {
-          if (user) {
-            removeUser();
-          }
+          removeUser();
         }
       } catch (error) {
         console.error('인증 초기화 실패:', error);
@@ -180,7 +176,7 @@ export const useAuth = () => {
     return () => {
       subscription.unsubscribe();
     };
-  }, [user, fetchUserProfile, setUser, removeUser, setIsLoadingImmediate]);
+  }, [fetchUserProfile, setUser, removeUser, setIsLoadingImmediate]);
 
   return {
     user,
