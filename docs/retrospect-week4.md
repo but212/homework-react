@@ -695,10 +695,7 @@ export const useAuth = () => {
             setUser(null);
           }
         } else {
-          if (user) {
-            console.log('세션 만료로 인한 로그아웃');
-            setUser(null);
-          }
+          setUser(null);
         }
       } catch (error) {
         console.error('인증 초기화 실패:', error);
@@ -750,32 +747,10 @@ export const useAuth = () => {
       }
     });
 
-    const sessionCheckInterval = setInterval(
-      async () => {
-        try {
-          const {
-            data: { session },
-            error,
-          } = await supabase.auth.getSession();
-
-          if (error || !session) {
-            if (user) {
-              console.log('세션 만료 감지, 로그아웃 처리');
-              setUser(null);
-            }
-          }
-        } catch (error) {
-          console.error('세션 확인 중 오류:', error);
-        }
-      },
-      5 * 60 * 1000
-    );
-
     return () => {
       subscription.unsubscribe();
-      clearInterval(sessionCheckInterval);
     };
-  }, [fetchUserProfile, user]);
+  }, [fetchUserProfile]);
 
   return {
     user,
@@ -785,7 +760,6 @@ export const useAuth = () => {
     refreshUser,
   };
 };
-
 ```
 
 ## 느낀점
