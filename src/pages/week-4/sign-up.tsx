@@ -120,7 +120,12 @@ const SignUp = () => {
           <label htmlFor='signup-bio'>소개(선택사항)</label>
           <textarea
             id='signup-bio'
-            {...register('bio')}
+            {...register('bio', {
+              maxLength: {
+                value: 200,
+                message: '소개는 200자 이하로 입력해주세요',
+              },
+            })}
             className={cn(
               'w-full',
               'px-3',
@@ -129,11 +134,11 @@ const SignUp = () => {
               'rounded',
               'focus:outline-none',
               'focus:ring',
-              'border-gray-300',
-              'focus:ring-blue-300',
+              errors.bio ? 'border-red-500 ring-red-300' : 'border-gray-300 focus:ring-blue-300',
               'resize-none'
             )}
-            placeholder='자기소개를 입력해주세요'
+            placeholder='자기소개를 입력해주세요 (200자 이하)'
+            maxLength={200}
           />
           {errors.bio && (
             <div id='signup-bio-error' className='text-red-500 text-sm mt-1' role='alert'>

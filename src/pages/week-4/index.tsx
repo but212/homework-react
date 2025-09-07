@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Link, Outlet, Route, Routes, useNavigate } from 'react-router-dom';
+import { Link, Outlet, Route, Routes } from 'react-router-dom';
 import { toast } from 'sonner';
 
 import Home from './home';
@@ -12,7 +12,6 @@ import { cn } from '@/lib/utils';
 
 const Week4 = () => {
   const [user, setUser] = useState<PartialProfile | null>(null);
-  const navigate = useNavigate();
 
   useEffect(() => {
     const initializeAuth = async () => {
@@ -83,25 +82,24 @@ const Week4 = () => {
         </Link>
         {user ? (
           <>
-          <Link to='/week-4/profile' aria-label='프로필' className='p-2 rounded hover:bg-gray-200 transition'>
-            프로필
-          </Link>
-          <button
-            type='button'
-            onClick={async () => {
-              const { error } = await supabase.auth.signOut();
+            <Link to='/week-4/profile' aria-label='프로필' className='p-2 rounded hover:bg-gray-200 transition'>
+              프로필
+            </Link>
+            <button
+              type='button'
+              onClick={async () => {
+                const { error } = await supabase.auth.signOut();
 
-              if (error) {
-                toast('로그아웃 실패' + error.message);
-              } else {
-                toast('로그아웃 되었습니다.');
-                navigate('/week-4/sign-in');
-              }
-            }}
-            className='p-2 bg-gray-200 rounded hover:bg-gray-300 transition'
-          >
-            로그아웃
-          </button>
+                if (error) {
+                  toast.error(`로그아웃 실패: ${error.message}`);
+                } else {
+                  toast.success('로그아웃 되었습니다.');
+                }
+              }}
+              className='p-2 bg-gray-200 rounded hover:bg-gray-300 transition'
+            >
+              로그아웃
+            </button>
           </>
         ) : (
           <>
