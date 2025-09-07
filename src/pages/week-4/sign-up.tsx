@@ -41,7 +41,7 @@ const SignUp = () => {
           name: formData.name,
           bio: formData.bio,
         },
-        emailRedirectTo: `https://homework-react-gold.vercel.app/week-4/home`,
+        emailRedirectTo: `https://homework-react-gold.vercel.app/`,
       },
     });
 
