@@ -4,7 +4,7 @@ This project includes or adapts third-party code under their respective licenses
 
 ---
 
-## 1) cn utility
+## 1 - cn utility
 
 - Name: cn
 - Source: <https://github.com/SGLara/cn>
