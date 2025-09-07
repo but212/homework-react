@@ -87,60 +87,7 @@ const onSubmit = async (formData: SignupForm) => {
   };
 ```
 
-### 변경 후 - 1000ms의 저장을 완료할 시간을 줌
-
-```tsx
-const onSubmit = async (formData: SignupForm) => {
-  if (isSubmitting) return;
-
-  const { error, data } = await supabase.auth.signUp({
-    email: formData.email,
-    password: formData.password,
-    options: {
-      data: {
-        name: formData.name,
-        bio: formData.bio,
-      },
-    },
-  });
-
-  if (error) {
-    toast.error(`회원가입 오류 발생 ${error.message}`);
-  } else {
-    if (data.user) {
-      await new Promise((resolve) => setTimeout(resolve, 1000)); // 세션 정보가 저장될 시간을 줌
-
-      const { data: sessionData } = await supabase.auth.getSession();
-
-      if (sessionData.session) {
-        const { error: profileError } = await supabase.from("profile").insert({
-          id: data.user.id,
-          user_name: formData.name,
-          email: data.user.email!,
-          phone: "",
-          bio: formData.bio || "",
-        });
-
-        if (profileError) {
-          toast.error(`프로필 생성 오류: ${profileError.message}`);
-        } else {
-          toast.success(`회원가입 성공 ${formData.name}`);
-          reset();
-        }
-      } else {
-        toast.error("세션 생성에 실패했습니다. 다시 시도해주세요.");
-      }
-    } else {
-      toast.error("회원정보를 저장할 수 없습니다.");
-    }
-  }
-};
-```
-
-## 세션 불러오기 실패
-
-하지만 이래놓고 보니 지속적으로 세션 불러오는 것을 실패했다는 토스트 메시지가 떠서 AI를 통해 알아보니 supabase.auth.signUP에서
-이메일 인증을 해야하는 경우 즉시 세션을 생성하지 않는다는 것을 알게 되었습니다.
+### 변경 후 - 트리거 함수를 통한 자동 생성
 
 이를 해결하기 위해 signUp 시 그냥 사용자에게 이메일만 확인하게 하고 AI가 생성해준 SQL 트리거 함수를 통해 자동으로 profile을 생성하게 했습니다.
 
@@ -592,7 +539,6 @@ onClick={logout}
 ## 느낀점
 
 이번 주의 학습내용은 머리가 지끈거릴 정도였습니다. 예측가능한 환경이 아닌 서버환경과 연계 시켜야 하기 때문에
-굉장히 어려웠습니다. 특히 sql문을 작성하고 데이터베이스를 연동하는 부분은 거의 AI의 도움이 절실했습니다
-원래는 JWT토큰을 활용하여 토큰 만료기간 동안만 로그인 유지같을 걸 구현하려 했지만 시간이 없어서 스펙과 설정을 알아보지
-못했던 것도 아쉽습니다.
-그리고 무엇보다 인증상태 확인 무한 로딩 문제를 해결하지 못한 점이 아쉽습니다.
+굉장히 어려웠습니다. 특히 sql문을 작성하고 데이터베이스를 연동하는 부분은 거의 AI의 도움이 절실했습니다.
+그리고 무엇보다 인증상태 확인 무한 로딩 문제를 해결하지 못한 점이 아쉽습니다. 일정 시간이 지나거나 새로고침을
+누르면 로그인 여부가 꼬이면서 무한 로딩이 발생합니다. 기능은 만족스럽지 못하고 결국 미완에 그치고 말았습니다.
