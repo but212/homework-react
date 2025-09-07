@@ -126,14 +126,22 @@ const EditProfileModal = ({ isOpen, onClose, user }: Props) => {
       }
 
       setIsDirty(false);
-      // 서버와 동기화를 위한 백그라운드 새로고침
-      refreshUser();
-      onClose();
     } catch (error) {
       console.error('프로필 업데이트 실패:', error);
       toast.error(`프로필 업데이트에 실패했습니다: ${error}`);
     } finally {
       setIsSubmitting(false);
+
+      // 성공/실패 관계없이 항상 실행되어야 하는 부분들
+      try {
+        refreshUser();
+      } catch (error) {
+        console.error('사용자 정보 새로고침 실패:', error);
+      }
+
+      window.location.reload();
+
+      onClose();
     }
   };
 

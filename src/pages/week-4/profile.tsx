@@ -27,6 +27,7 @@ export default function ProfilePage({ user }: Props) {
       console.log('계정 삭제 성공');
       alert('계정이 성공적으로 삭제되었습니다.');
       navigate('/');
+      window.location.reload();
     } catch (error) {
       console.error('계정 삭제 실패:', error);
       const errorMessage = error instanceof Error ? error.message : String(error);
