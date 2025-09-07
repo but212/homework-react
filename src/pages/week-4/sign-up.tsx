@@ -48,7 +48,7 @@ const SignUp = () => {
       toast.error(`회원가입 오류 발생 ${error.message}`);
     } else {
       if (data.user) {
-        await new Promise(resolve => setTimeout(resolve, 500));
+        await new Promise(resolve => setTimeout(resolve, 1000));
 
         const { data: sessionData } = await supabase.auth.getSession();
 
