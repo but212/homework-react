@@ -49,26 +49,9 @@ const SignUp = () => {
       toast.error(`회원가입 오류 발생 ${error.message}`);
     } else {
       if (data.user) {
-        if (!data.session) {
-          toast.success(`회원가입이 완료되었습니다. 이메일을 확인하여 계정을 활성화해주세요.`);
-          reset();
-          return;
-        }
-
-        const { error: profileError } = await supabase.from('profile').insert({
-          id: data.user.id,
-          user_name: formData.name,
-          email: data.user.email!,
-          phone: '',
-          bio: formData.bio || '',
-        });
-
-        if (profileError) {
-          toast.error(`프로필 생성 오류: ${profileError.message}`);
-        } else {
-          toast.success(`회원가입 성공 ${formData.name}`);
-          reset();
-        }
+        toast.success(`회원가입이 완료되었습니다. 이메일을 확인하여 계정을 활성화해주세요.`);
+        reset();
+        return;
       } else {
         toast.error('회원정보를 저장할 수 없습니다.');
       }
