@@ -136,12 +136,29 @@ export const useAuth = () => {
         }
 
         if (session?.user) {
+          const {
+            data: { user },
+            error: userError,
+          } = await supabase.auth.getUser();
+
+          if (userError || !user) {
+            console.error('사용자 세션 검증 실패:', userError?.message);
+            removeUser();
+            return;
+          }
+
           const profile = await fetchUserProfile(session.user.id);
           if (profile) {
             setUser(profile);
+          } else {
+            removeUser();
           }
         } else {
-          removeUser();
+          const storedUser = localStorage.getItem('week4_user');
+          if (storedUser && storedUser !== 'null') {
+            console.log('세션 만료로 인한 로그아웃');
+            removeUser();
+          }
         }
       } catch (error) {
         console.error('인증 초기화 실패:', error);
@@ -156,6 +173,8 @@ export const useAuth = () => {
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange(async (event, session) => {
+      console.log('Auth state changed:', event, session?.user?.id);
+
       switch (event) {
         case 'SIGNED_IN':
           if (session?.user) {
@@ -164,17 +183,61 @@ export const useAuth = () => {
               setUser(profile);
             }
           }
+          setIsLoadingImmediate(false);
           break;
         case 'SIGNED_OUT':
           removeUser();
+          setIsLoadingImmediate(false);
+          break;
+        case 'TOKEN_REFRESHED':
+          // 토큰이 갱신되었을 때 사용자 정보도 갱신
+          if (session?.user) {
+            const profile = await fetchUserProfile(session.user.id);
+            if (profile) {
+              setUser(profile);
+            }
+          }
+          break;
+        case 'USER_UPDATED':
+          // 사용자 정보가 업데이트되었을 때
+          if (session?.user) {
+            const profile = await fetchUserProfile(session.user.id);
+            if (profile) {
+              setUser(profile);
+            }
+          }
           break;
         default:
           break;
       }
     });
 
+    // 주기적으로 세션 상태 확인 (5분마다)
+    const sessionCheckInterval = setInterval(
+      async () => {
+        try {
+          const {
+            data: { session },
+            error,
+          } = await supabase.auth.getSession();
+
+          if (error || !session) {
+            const storedUser = localStorage.getItem('week4_user');
+            if (storedUser && storedUser !== 'null') {
+              console.log('세션 만료 감지, 로그아웃 처리');
+              removeUser();
+            }
+          }
+        } catch (error) {
+          console.error('세션 확인 중 오류:', error);
+        }
+      },
+      5 * 60 * 1000
+    ); // 5분
+
     return () => {
       subscription.unsubscribe();
+      clearInterval(sessionCheckInterval);
     };
   }, [fetchUserProfile, setUser, removeUser, setIsLoadingImmediate]);
 
