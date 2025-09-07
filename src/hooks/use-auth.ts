@@ -1,13 +1,11 @@
-import { useCallback, useEffect } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { toast } from 'sonner';
-
-import usePersist from './use-persist';
 
 import supabase, { type PartialProfile } from '@/lib/supabase';
 
 /**
  * 사용자 인증 상태를 관리하는 커스텀 훅
- * localStorage를 통해 로그인 정보를 지속적으로 저장하고 관리합니다.
+ * Supabase 세션을 기반으로 인증 상태를 관리합니다.
  *
  * @returns 인증 관련 상태와 함수들
  * - user: 현재 로그인된 사용자 정보
@@ -17,9 +15,8 @@ import supabase, { type PartialProfile } from '@/lib/supabase';
  * - refreshUser: 사용자 정보 새로고침 함수
  */
 export const useAuth = () => {
-  const [user, setUser, removeUser] = usePersist<PartialProfile | null>('week4_user', null);
-
-  const [isLoading, , , setIsLoadingImmediate] = usePersist<boolean>('week4_auth_loading', true);
+  const [user, setUser] = useState<PartialProfile | null>(null);
+  const [isLoading, setIsLoading] = useState<boolean>(true);
 
   const fetchUserProfile = useCallback(async (userId: string): Promise<PartialProfile | null> => {
     try {
@@ -44,7 +41,7 @@ export const useAuth = () => {
 
   const login = useCallback(
     async (email: string, password: string) => {
-      setIsLoadingImmediate(true);
+      setIsLoading(true);
 
       try {
         const { error, data } = await supabase.auth.signInWithPassword({
@@ -74,10 +71,10 @@ export const useAuth = () => {
         toast.error(`로그인 실패: ${errorMessage}`);
         return { success: false, error: errorMessage };
       } finally {
-        setIsLoadingImmediate(false);
+        setIsLoading(false);
       }
     },
-    [fetchUserProfile, setUser, setIsLoadingImmediate]
+    [fetchUserProfile, setUser]
   );
 
   const logout = useCallback(async () => {
@@ -89,8 +86,8 @@ export const useAuth = () => {
         return { success: false, error: error.message };
       }
 
-      // localStorage에서 사용자 정보 제거
-      removeUser();
+      // 사용자 상태 제거
+      setUser(null);
       toast.success('로그아웃 되었습니다.');
       return { success: true };
     } catch (error) {
@@ -98,7 +95,7 @@ export const useAuth = () => {
       toast.error(`로그아웃 실패: ${errorMessage}`);
       return { success: false, error: errorMessage };
     }
-  }, [removeUser]);
+  }, []);
 
   const refreshUser = useCallback(async () => {
     try {
@@ -131,7 +128,7 @@ export const useAuth = () => {
 
         if (error) {
           console.error('세션 확인 오류:', error.message);
-          removeUser();
+          setUser(null);
           return;
         }
 
@@ -143,7 +140,7 @@ export const useAuth = () => {
 
           if (userError || !user) {
             console.error('사용자 세션 검증 실패:', userError?.message);
-            removeUser();
+            setUser(null);
             return;
           }
 
@@ -151,20 +148,19 @@ export const useAuth = () => {
           if (profile) {
             setUser(profile);
           } else {
-            removeUser();
+            setUser(null);
           }
         } else {
-          const storedUser = localStorage.getItem('week4_user');
-          if (storedUser && storedUser !== 'null') {
+          if (user) {
             console.log('세션 만료로 인한 로그아웃');
-            removeUser();
+            setUser(null);
           }
         }
       } catch (error) {
         console.error('인증 초기화 실패:', error);
-        removeUser();
+        setUser(null);
       } finally {
-        setIsLoadingImmediate(false);
+        setIsLoading(false);
       }
     };
 
@@ -183,14 +179,13 @@ export const useAuth = () => {
               setUser(profile);
             }
           }
-          setIsLoadingImmediate(false);
+          setIsLoading(false);
           break;
         case 'SIGNED_OUT':
-          removeUser();
-          setIsLoadingImmediate(false);
+          setUser(null);
+          setIsLoading(false);
           break;
         case 'TOKEN_REFRESHED':
-          // 토큰이 갱신되었을 때 사용자 정보도 갱신
           if (session?.user) {
             const profile = await fetchUserProfile(session.user.id);
             if (profile) {
@@ -199,7 +194,6 @@ export const useAuth = () => {
           }
           break;
         case 'USER_UPDATED':
-          // 사용자 정보가 업데이트되었을 때
           if (session?.user) {
             const profile = await fetchUserProfile(session.user.id);
             if (profile) {
@@ -212,7 +206,6 @@ export const useAuth = () => {
       }
     });
 
-    // 주기적으로 세션 상태 확인 (5분마다)
     const sessionCheckInterval = setInterval(
       async () => {
         try {
@@ -222,10 +215,9 @@ export const useAuth = () => {
           } = await supabase.auth.getSession();
 
           if (error || !session) {
-            const storedUser = localStorage.getItem('week4_user');
-            if (storedUser && storedUser !== 'null') {
+            if (user) {
               console.log('세션 만료 감지, 로그아웃 처리');
-              removeUser();
+              setUser(null);
             }
           }
         } catch (error) {
@@ -233,13 +225,13 @@ export const useAuth = () => {
         }
       },
       5 * 60 * 1000
-    ); // 5분
+    );
 
     return () => {
       subscription.unsubscribe();
       clearInterval(sessionCheckInterval);
     };
-  }, [fetchUserProfile, setUser, removeUser, setIsLoadingImmediate]);
+  }, [fetchUserProfile, user]);
 
   return {
     user,
@@ -247,6 +239,5 @@ export const useAuth = () => {
     login,
     logout,
     refreshUser,
-    setUser,
   };
 };

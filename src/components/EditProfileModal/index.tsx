@@ -26,7 +26,7 @@ const EditProfileModal = ({ isOpen, onClose, user }: Props) => {
   const [isDirty, setIsDirty] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [initialUser, setInitialUser] = useState<PartialProfile | null>(null);
-  const { refreshUser, setUser } = useAuth();
+  const { refreshUser } = useAuth();
   const {
     register,
     handleSubmit,
@@ -91,13 +91,11 @@ const EditProfileModal = ({ isOpen, onClose, user }: Props) => {
 
     try {
       setIsSubmitting(true);
-      let hasChanges = false;
       const updatedUser = { ...user };
 
       if (data.email !== user.email) {
         await updateUserEmail(data.email);
         updatedUser.email = data.email;
-        hasChanges = true;
         toast.success('이메일이 성공적으로 업데이트되었습니다.');
       }
 
@@ -111,7 +109,6 @@ const EditProfileModal = ({ isOpen, onClose, user }: Props) => {
           user_name: data.name,
         });
         updatedUser.user_name = data.name;
-        hasChanges = true;
         toast.success('이름이 성공적으로 업데이트되었습니다.');
       }
 
@@ -120,13 +117,7 @@ const EditProfileModal = ({ isOpen, onClose, user }: Props) => {
           bio: data.bio,
         });
         updatedUser.bio = data.bio;
-        hasChanges = true;
         toast.success('소개가 성공적으로 업데이트되었습니다.');
-      }
-
-      // 즉시 로컬 상태 업데이트
-      if (hasChanges) {
-        setUser(updatedUser);
       }
 
       setIsDirty(false);
