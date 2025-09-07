@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Link, Outlet, Route, Routes } from 'react-router-dom';
+import { Link, Outlet, Route, Routes, useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 
 import Home from './home';
@@ -12,11 +12,15 @@ import { cn } from '@/lib/utils';
 
 const Week4 = () => {
   const [user, setUser] = useState<PartialProfile | null>(null);
+  const navigate = useNavigate();
 
   useEffect(() => {
     const initializeAuth = async () => {
-      const { data: { session }, error } = await supabase.auth.getSession();
-      
+      const {
+        data: { session },
+        error,
+      } = await supabase.auth.getSession();
+
       if (error) {
         console.error('세션 확인 오류:', error.message);
         return;
@@ -74,21 +78,35 @@ const Week4 = () => {
     <>
       <title>Week 4</title>
       <nav className={cn('flex', 'gap-4', 'm-4')}>
-        <Link to='/week-4/home' aria-label='홈'>
+        <Link to='/week-4/home' aria-label='홈' className='p-2 rounded hover:bg-gray-200 transition'>
           홈
         </Link>
-        <Link to='/week-4/sign-up' aria-label='회원가입'>
-          회원가입
-        </Link>
         {user ? (
-          <>
-            <Link to='/week-4/profile'>프로필</Link>
-            <button type='button' onClick={() => supabase.auth.signOut()}>
-              로그아웃
-            </button>
-          </>
+          <button
+            type='button'
+            onClick={async () => {
+              const { error } = await supabase.auth.signOut();
+
+              if (error) {
+                toast('로그아웃 실패' + error.message);
+              } else {
+                toast('로그아웃 되었습니다.');
+                navigate('/week-4/sign-in');
+              }
+            }}
+            className='p-2 bg-gray-200 rounded hover:bg-gray-300 transition'
+          >
+            로그아웃
+          </button>
         ) : (
-          <Link to='/week-4/sign-in'>로그인</Link>
+          <>
+            <Link to='/week-4/sign-up' aria-label='회원가입' className='p-2 rounded hover:bg-gray-200 transition'>
+              회원가입
+            </Link>
+            <Link to='/week-4/sign-in' className='p-2 rounded hover:bg-gray-200 transition'>
+              로그인
+            </Link>
+          </>
         )}
       </nav>
       <Routes>

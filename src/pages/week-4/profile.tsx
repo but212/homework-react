@@ -1,16 +1,15 @@
 import { useNavigate } from 'react-router-dom';
-import { toast } from 'sonner';
 
-import supabase, { type PartialProfile } from '@/lib/supabase';
+import { type PartialProfile } from '@/lib/supabase';
 
 interface Props {
   user: PartialProfile | null;
 }
 
 export default function ProfilePage({ user }: Props) {
-    const navigate = useNavigate();
+  const navigate = useNavigate();
   return (
-    <div className='max-w-md mx-auto mt-10 bg-white rounded-lg shadow-lg p-8'>
+    <div className='mx-4 mt-10 bg-white rounded-lg shadow-lg p-8'>
       <h2 className='text-xl font-bold mb-6 text-center'>프로필</h2>
       {user ? (
         <div>
@@ -22,19 +21,19 @@ export default function ProfilePage({ user }: Props) {
           </div>
           <button
             onClick={async () => {
-              // [실습] Supabase 로그아웃
-              const { error } = await supabase.auth.signOut();
-
-              if (error) {
-                toast('로그아웃 실패' + error.message);
-              } else {
-                toast('로그아웃 되었습니다.');
-                navigate('signin');
-              }
+              navigate('/week-4/profile');
             }}
-            className='w-full mt-4 bg-gray-200 py-2 rounded hover:bg-gray-300 transition'
+            className='w-2/5 mt-4 bg-gray-200 py-2 rounded hover:bg-gray-300 transition'
           >
-            로그아웃
+            계정 수정
+          </button>
+          <button
+            onClick={async () => {
+              navigate('/week-4/home');
+            }}
+            className='w-2/5 mt-4 bg-red-500 py-2 rounded hover:bg-red-600 transition'
+          >
+            계정삭제
           </button>
         </div>
       ) : (

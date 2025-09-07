@@ -232,3 +232,60 @@ sql/
 ```
 
 이렇게 구성하면 나중에 데이터베이스를 다시 생성할 때 도움이 될 수 있으리라 생각됩니다.
+
+### RPC 함수 및 클라이언트 사이드 삭제함수
+
+클라이언트 사이드에서 먼저 profile을 삭제한 후
+RPC 함수를 통해 auth.users 테이블을 삭제하는 함수를 구현했습니다.
+
+```ts
+export const deleteUserAccount = async () => {
+  try {
+    const {
+      data: { user },
+      error: userError,
+    } = await supabase.auth.getUser();
+
+    if (userError || !user) {
+      throw new Error('사용자를 찾을 수 없습니다.');
+    }
+
+    const { error: profileError } = await supabase.from('profile').delete().eq('id', user.id);
+
+    if (profileError) {
+      throw profileError;
+    }
+
+    const { error: deleteError } = await supabase.rpc('delete_user');
+
+    if (deleteError) {
+      throw deleteError;
+    }
+
+    return { success: true };
+  } catch (error) {
+    console.error('계정 삭제 실패:', error);
+    throw error;
+  }
+};
+```
+
+이렇게 구현하면 클라이언트 사이드에서 계정을 삭제할 수 있습니다.
+그리고 서버사이드에선 RPC 함수를 통해 auth.users 테이블을 삭제하는 함수를 구현했습니다.
+
+```sql
+-- 사용자 삭제를 위한 RPC 함수
+CREATE OR REPLACE FUNCTION delete_user()
+RETURNS void
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+BEGIN
+  -- auth.users 테이블에서 현재 사용자 삭제
+  DELETE FROM auth.users WHERE id = auth.uid();
+END;
+$$;
+```
+
+이렇게 구현하면 서버사이드에서 계정을 삭제할 수 있습니다. 이를 프로필 페이지에서 삭제 버튼을 눌렀을 때 호출하는 함수로 구현했습니다.
