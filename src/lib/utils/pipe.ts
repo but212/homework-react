@@ -33,7 +33,7 @@ type Last<T extends readonly unknown[]> = T extends readonly [...unknown[], infe
  *
  * @template T 함수 배열 타입
  */
-type PipeOutput<T extends readonly Fn[]> = Last<T> extends Fn<any, infer R> ? R : unknown;
+type PipeOutput<T extends readonly Fn[]> = Last<T> extends Fn<unknown, infer R> ? R : unknown;
 
 /**
  * 파이프 실행 중 발생한 오류를 나타내는 에러 클래스
@@ -117,7 +117,10 @@ class PipeAbortError extends Error {
    * @param message 에러 메시지
    * @param step 취소가 발생한 단계 (0-based index)
    */
-  constructor(message: string, public readonly step: number) {
+  constructor(
+    message: string,
+    public readonly step: number
+  ) {
     super(message);
     this.name = 'PipeAbortError';
   }
@@ -156,10 +159,7 @@ export const isFunction = <T = unknown, U = unknown>(fn: unknown): fn is (...arg
  * ```
  */
 export const isPromise = <T = unknown>(value: unknown): value is Promise<T> =>
-  value != null &&
-  typeof value === 'object' &&
-  'then' in value &&
-  typeof (value as any).then === 'function';
+  value != null && typeof value === 'object' && 'then' in value && typeof (value as Record<string, unknown>).then === 'function';
 
 /**
  * 함수가 비동기(async) 함수인지 확인하는 타입 가드입니다.
@@ -173,7 +173,7 @@ export const isPromise = <T = unknown>(value: unknown): value is Promise<T> =>
  * if (isAsyncFunction(asyncFn)) { // asyncFn은 이제 (...args: any[]) => Promise<any> 타입으로 추론됩니다 }
  * ```
  */
-export const isAsyncFunction = (fn: unknown): fn is (...args: any[]) => Promise<any> => {
+export const isAsyncFunction = (fn: unknown): fn is (...args: unknown[]) => Promise<unknown> => {
   if (!isFunction(fn)) return false;
   return fn.constructor.name === 'AsyncFunction' || fn.toString().includes('async ');
 };
@@ -272,7 +272,7 @@ export const isNullish = (value: unknown): value is null | undefined => value ==
  * validateFunctionArity(foo, 2); // true
  * ```
  */
-export const validateFunctionArity = (fn: Function, expectedArity: number): boolean =>
+export const validateFunctionArity = (fn: (...args: unknown[]) => unknown, expectedArity: number): boolean =>
   fn.length === expectedArity;
 
 /**
@@ -471,18 +471,10 @@ export interface AsyncExecutionOptions {
 /**
  * Promise에 타임아웃을 적용하는 유틸리티 함수
  */
-const withTimeout = <T>(
-  promise: Promise<T>,
-  timeoutMs: number,
-  step: number
-): Promise<T> => {
+const withTimeout = <T>(promise: Promise<T>, timeoutMs: number, step: number): Promise<T> => {
   return new Promise((resolve, reject) => {
     const timeoutId = setTimeout(() => {
-      reject(new PipeTimeoutError(
-        `${step + 1}번째 단계에서 ${timeoutMs}ms 타임아웃 발생`,
-        timeoutMs,
-        step + 1
-      ));
+      reject(new PipeTimeoutError(`${step + 1}번째 단계에서 ${timeoutMs}ms 타임아웃 발생`, timeoutMs, step + 1));
     }, timeoutMs);
 
     promise
@@ -495,33 +487,25 @@ const withTimeout = <T>(
 /**
  * 지수 백오프를 사용한 재시도 로직
  */
-const withRetry = async <T>(
-  fn: () => Promise<T>,
-  attempts: number,
-  delayMs: number = 1000
-): Promise<T> => {
+const withRetry = async <T>(fn: () => Promise<T>, attempts: number, delayMs: number = 1000): Promise<T> => {
   let lastError: Error;
-  
+
   for (let i = 0; i < attempts; i++) {
     try {
       return await fn();
     } catch (error) {
       lastError = error instanceof Error ? error : new Error(String(error));
-      
+
       if (i === attempts - 1) {
-        throw new PipeRetryError(
-          `${attempts}번의 재시도 후에도 실패했습니다`,
-          attempts,
-          lastError
-        );
+        throw new PipeRetryError(`${attempts}번의 재시도 후에도 실패했습니다`, attempts, lastError);
       }
-      
+
       // 지수 백오프: 2^i * delayMs
       const backoffDelay = delayMs * Math.pow(2, i);
       await new Promise(resolve => setTimeout(resolve, backoffDelay));
     }
   }
-  
+
   throw lastError!;
 };
 
@@ -550,7 +534,7 @@ const executeAsyncWithErrorHandling = async <T>(
     timeoutMs,
     retryAttempts = 1,
     retryDelayMs = 1000,
-    abortSignal
+    abortSignal,
   } = options;
 
   if (enableTrace) {
@@ -581,7 +565,7 @@ const executeAsyncWithErrorHandling = async <T>(
       };
 
       let stepResult: unknown;
-      
+
       if (retryAttempts > 1) {
         stepResult = await withRetry(executeStep, retryAttempts, retryDelayMs);
       } else {
@@ -606,9 +590,7 @@ const executeAsyncWithErrorHandling = async <T>(
 
     return result;
   } catch (error) {
-    if (error instanceof PipeTimeoutError || 
-        error instanceof PipeRetryError || 
-        error instanceof PipeAbortError) {
+    if (error instanceof PipeTimeoutError || error instanceof PipeRetryError || error instanceof PipeAbortError) {
       throw error;
     }
 
@@ -647,7 +629,7 @@ interface Pipe {
   <A, B, C, D, E, F, G>(f1: Fn<A, B>, f2: Fn<B, C>, f3: Fn<C, D>, f4: Fn<D, E>, f5: Fn<E, F>, f6: Fn<F, G>): Fn<A, G>;
   <T extends readonly Fn[]>(
     ...fns: T
-  ): T extends readonly [Fn<infer A, any>, ...any[]] ? Fn<A, PipeOutput<T>> : Fn<unknown, unknown>;
+  ): T extends readonly [Fn<infer A, unknown>, ...unknown[]] ? Fn<A, PipeOutput<T>> : Fn<unknown, unknown>;
   // 폴백 케이스
   (...fns: readonly Fn[]): <T>(value: T) => unknown;
 }
@@ -795,10 +777,7 @@ export const pipeAsync: PipeAsync = (...fns: readonly AsyncFn[]) => {
  * setTimeout(() => controller.abort(), 10000);
  * ```
  */
-export const pipeAsyncWithOptions = (
-  options: AsyncExecutionOptions,
-  ...fns: readonly AsyncFn[]
-) => {
+export const pipeAsyncWithOptions = (options: AsyncExecutionOptions, ...fns: readonly AsyncFn[]) => {
   validateFunctions(fns as readonly Fn[]);
 
   if (fns.length === 0) {
@@ -1223,21 +1202,28 @@ export const memoize = <T extends unknown[], U>(fn: (...args: T) => U) => {
     return result;
   };
 
-  // 개발 모드에서만 캐시 통계 및 제어 메서드 제공
+  // 디버깅을 위한 통계 정보 (개발 모드에서만)
   if (typeof process !== 'undefined' && process.env?.NODE_ENV === 'development') {
-    (memoized as any).getStats = () => ({ hitCount, missCount, cacheSize: cache.size });
-    (memoized as any).clearCache = () => {
+    (
+      memoized as typeof memoized & {
+        getStats: () => { hitCount: number; missCount: number; cacheSize: number };
+        clearCache: () => void;
+      }
+    ).getStats = () => ({ hitCount, missCount, cacheSize: cache.size });
+    (
+      memoized as typeof memoized & {
+        getStats: () => { hitCount: number; missCount: number; cacheSize: number };
+        clearCache: () => void;
+      }
+    ).clearCache = () => {
       cache.clear();
       hitCount = 0;
       missCount = 0;
     };
   }
-
   return memoized;
 };
 
 // 에러 타입들을 외부에서 사용할 수 있도록 export
-export {
-  PipeAbortError, PipeExecutionError, PipeRetryError, PipeTimeoutError, PipeValidationError
-};
+export { PipeExecutionError, PipeValidationError };
 

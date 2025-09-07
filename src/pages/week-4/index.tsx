@@ -43,10 +43,10 @@ const Week4 = () => {
         )}
       </nav>
       <Routes>
-        <Route path='home' element={<Home user={user} />} />
+        <Route path='home' element={<Home />} />
         <Route path='sign-in' element={<SignIn />} />
         <Route path='sign-up' element={<SignUp />} />
-        <Route path='profile' element={<Profile user={user} />} />
+        <Route path='profile' element={<Profile />} />
       </Routes>
       <Outlet />
     </>

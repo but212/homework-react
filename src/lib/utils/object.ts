@@ -14,11 +14,15 @@ export const clamp = (v: number, min: number, max: number) => Math.min(Math.max(
  * @returns 선택된 키들만 포함하는 새로운 객체
  */
 export function pick<T extends object, K extends keyof T>(obj: T, keys: ReadonlyArray<K>): Pick<T, K> {
-  const out = {} as Pick<T, K>;
-  keys.forEach(k => {
-    if (k in obj) out[k] = obj[k];
-  });
-  return out;
+  return keys.reduce(
+    (acc, key) => {
+      if (key in obj) {
+        acc[key] = obj[key];
+      }
+      return acc;
+    },
+    {} as Pick<T, K>
+  );
 }
 
 /**

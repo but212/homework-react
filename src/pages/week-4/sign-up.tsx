@@ -1,3 +1,4 @@
+import { AuthError, type AuthResponse } from '@supabase/supabase-js';
 import { Eye, EyeOff } from 'lucide-react';
 import { useForm } from 'react-hook-form';
 import { toast } from 'sonner';
@@ -6,6 +7,7 @@ import FormContainer from '@/components/FormContainer';
 import { useToggleState } from '@/hooks';
 import supabase from '@/lib/supabase';
 import { cn } from '@/lib/utils';
+import { pipe, pipeIf } from '@/lib/utils/pipe';
 
 // 폼 입력값 타입 정의
 type SignupForm = {
@@ -15,6 +17,27 @@ type SignupForm = {
   confirmPassword: string;
   bio?: string;
 };
+
+// 패스워드 검증 파이프라인
+const validatePassword = pipe(
+  (value: string) => ({
+    value,
+    errors: [] as string[],
+    hasLowercase: /[a-z]/.test(value),
+    hasUppercase: /[A-Z]/.test(value),
+    hasNumber: /[0-9]/.test(value),
+  }),
+  ({ value, errors, hasLowercase, hasUppercase, hasNumber }) => ({
+    value,
+    errors: [
+      ...errors,
+      ...(!hasLowercase ? ['영문 소문자가 하나 이상 포함되어야 합니다.'] : []),
+      ...(!hasUppercase ? ['영문 대문자가 하나 이상 포함되어야 합니다.'] : []),
+      ...(!hasNumber ? ['숫자가 하나 이상 포함되어야 합니다.'] : []),
+    ],
+  }),
+  ({ errors }) => (errors.length > 0 ? errors[0] : true)
+);
 
 const SignUp = () => {
   const {
@@ -29,6 +52,34 @@ const SignUp = () => {
 
   const [showPassword, { toggle: toggleShowPassword }] = useToggleState(false);
   const [showConfirmPassword, { toggle: toggleShowConfirmPassword }] = useToggleState(false);
+
+  // 회원가입 처리 파이프라인
+  const processSignupResult = pipe(
+    ({ error, data }: { error: AuthError | null; data: AuthResponse['data'] }) => ({ error, data, hasError: !!error }),
+    pipeIf(
+      ({ hasError }) => hasError,
+      ({ error }) => {
+        toast.error(`회원가입 오류 발생 ${error?.message}`);
+        return { success: false };
+      },
+      ({ data }) =>
+        pipe(
+          (userData: AuthResponse['data']) => ({ user: userData.user, hasUser: !!userData.user }),
+          pipeIf(
+            ({ hasUser }) => hasUser,
+            () => {
+              toast.success(`회원가입이 완료되었습니다. 이메일을 확인하여 계정을 활성화해주세요.`);
+              reset();
+              return { success: true };
+            },
+            () => {
+              toast.error('회원정보를 저장할 수 없습니다.');
+              return { success: false };
+            }
+          )
+        )(data)
+    )
+  );
 
   const onSubmit = async (formData: SignupForm) => {
     if (isSubmitting) return;
@@ -45,17 +96,7 @@ const SignUp = () => {
       },
     });
 
-    if (error) {
-      toast.error(`회원가입 오류 발생 ${error.message}`);
-    } else {
-      if (data.user) {
-        toast.success(`회원가입이 완료되었습니다. 이메일을 확인하여 계정을 활성화해주세요.`);
-        reset();
-        return;
-      } else {
-        toast.error('회원정보를 저장할 수 없습니다.');
-      }
-    }
+    processSignupResult({ error, data });
   };
   const password = watch('password');
 
@@ -163,11 +204,7 @@ const SignUp = () => {
                   value: 6,
                   message: '6자 이상 입력하세요.',
                 },
-                validate: (value: string) => {
-                  if (!/[a-z]/.test(value)) return '영문 소문자가 하나 이상 포함되어야 합니다.';
-                  if (!/[A-Z]/.test(value)) return '영문 대문자가 하나 이상 포함되어야 합니다.';
-                  if (!/[0-9]/.test(value)) return '숫자가 하나 이상 포함되어야 합니다.';
-                },
+                validate: validatePassword,
               })}
               className={cn(
                 'w-full px-3 py-2 border rounded focus:outline-none focus:ring pr-12',

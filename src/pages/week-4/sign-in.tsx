@@ -12,7 +12,7 @@ type LoginForm = {
 
 const SignIn = () => {
   const navigate = useNavigate();
-  const { login, isLoading } = useAuth();
+  const { login, isLoading, error } = useAuth();
   const {
     register,
     handleSubmit,
@@ -78,6 +78,11 @@ const SignIn = () => {
             </div>
           )}
         </div>
+        {error && (
+          <div className='mb-4 p-3 bg-red-100 border border-red-400 text-red-700 rounded' role='alert'>
+            {error.message}
+          </div>
+        )}
         <button
           type='submit'
           aria-disabled={isSubmitting || isLoading}

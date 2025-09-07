@@ -6,6 +6,7 @@ import { useAuth } from '@/hooks/use-auth';
 import { type PartialProfile } from '@/lib/supabase';
 import { cn } from '@/lib/utils';
 import { updateUserEmail, updateUserPassword } from '@/lib/utils/auth';
+import { pipe, pipeIf } from '@/lib/utils/pipe';
 import { updateProfile } from '@/lib/utils/profile';
 
 interface Props {
@@ -86,39 +87,76 @@ const EditProfileModal = ({ isOpen, onClose, user }: Props) => {
     }
   };
 
+  // 이메일 업데이트 파이프라인
+  const updateEmailPipeline = pipe(
+    ({ data, user }: { data: ProfileForm; user: PartialProfile }) => ({
+      shouldUpdate: data.email !== user.email,
+      email: data.email,
+      user,
+    }),
+    pipeIf(
+      ({ shouldUpdate }) => shouldUpdate,
+      async ({ email, user }) => {
+        await updateUserEmail(email);
+        toast.success('이메일이 성공적으로 업데이트되었습니다.');
+        return { ...user, email };
+      },
+      async ({ user }) => Promise.resolve(user)
+    )
+  );
+
+  // 패스워드 업데이트 파이프라인
+  const updatePasswordPipeline = async (params: { data: ProfileForm }) => {
+    const { data } = params;
+    const shouldUpdate = data.password && data.password.length > 0;
+
+    if (shouldUpdate) {
+      await updateUserPassword(data.password!);
+      toast.success('비밀번호가 성공적으로 업데이트되었습니다.');
+      return true;
+    }
+
+    return false;
+  };
+
+  // 프로필 정보 업데이트 파이프라인
+  const updateProfileInfoPipeline = pipe(
+    ({ data, user }: { data: ProfileForm; user: PartialProfile }) => ({
+      nameChanged: data.name !== user.user_name,
+      bioChanged: data.bio !== (user.bio || ''),
+      name: data.name,
+      bio: data.bio,
+      user,
+    }),
+    async ({ nameChanged, bioChanged, name, bio, user }) => {
+      const updatedUser = user; // { ...user };
+
+      if (nameChanged) {
+        await updateProfile({ user_name: name });
+        updatedUser.user_name = name;
+        toast.success('이름이 성공적으로 업데이트되었습니다.');
+      }
+
+      if (bioChanged) {
+        await updateProfile({ bio });
+        updatedUser.bio = bio;
+        toast.success('소개가 성공적으로 업데이트되었습니다.');
+      }
+
+      return updatedUser;
+    }
+  );
+
   const onSubmit = async (data: ProfileForm) => {
     if (!user) return;
 
     try {
       setIsSubmitting(true);
-      const updatedUser = { ...user };
 
-      if (data.email !== user.email) {
-        await updateUserEmail(data.email);
-        updatedUser.email = data.email;
-        toast.success('이메일이 성공적으로 업데이트되었습니다.');
-      }
-
-      if (data.password && data.password.length > 0) {
-        await updateUserPassword(data.password);
-        toast.success('비밀번호가 성공적으로 업데이트되었습니다.');
-      }
-
-      if (data.name !== user.user_name) {
-        await updateProfile({
-          user_name: data.name,
-        });
-        updatedUser.user_name = data.name;
-        toast.success('이름이 성공적으로 업데이트되었습니다.');
-      }
-
-      if (data.bio !== (user.bio || '')) {
-        await updateProfile({
-          bio: data.bio,
-        });
-        updatedUser.bio = data.bio;
-        toast.success('소개가 성공적으로 업데이트되었습니다.');
-      }
+      // 순차적으로 업데이트 실행
+      const emailUpdatedUser = await updateEmailPipeline({ data, user });
+      await updatePasswordPipeline({ data });
+      await updateProfileInfoPipeline({ data, user: emailUpdatedUser });
 
       setIsDirty(false);
     } catch (error) {
