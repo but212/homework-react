@@ -1,10 +1,12 @@
-import supabase, { type PartialProfile } from '@/lib/supabase';
-import { cn } from '@/lib/utils';
 import { useEffect, useState } from 'react';
 import toast from 'react-hot-toast';
 import { Link, Outlet, Route, Routes } from 'react-router-dom';
+
 import SignIn from './sign-in';
 import SignUp from './sign-up';
+
+import { cn } from '@/lib/utils';
+import supabase, { type PartialProfile } from '@/lib/supabase';
 
 const Week4 = () => {
   const [user, setUser] = useState<PartialProfile | null>(null);

@@ -1,5 +1,6 @@
-import { debounce } from '@/lib/utils';
 import { useEffect, useMemo, useState } from 'react';
+
+import { debounce } from '@/lib/utils';
 
 interface SearchFormProps {
   onSearch: (query: string) => void;
@@ -11,15 +12,15 @@ const SearchForm = ({ onSearch, searchQuery }: SearchFormProps) => {
 
   const debouncedSearch = useMemo(
     () =>
-      debounce((query: string) => {
-        onSearch(query);
+      debounce((...args: unknown[]) => {
+        onSearch(args[0] as string);
       }, 300),
     [onSearch]
   );
 
   useEffect(() => {
     debouncedSearch(inputValue);
-  }, [inputValue]);
+  }, [inputValue, debouncedSearch]);
 
   useEffect(() => {
     setInputValue(searchQuery);

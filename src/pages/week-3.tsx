@@ -1,6 +1,7 @@
+import { Link } from 'react-router-dom';
+
 import SearchCardList from '@/components/SearchCardList/SearchCardList';
 import { cn } from '@/lib/utils';
-import { Link } from 'react-router-dom';
 
 const Week3 = () => {
   return (

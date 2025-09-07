@@ -31,7 +31,9 @@ export function omit<T extends object, K extends keyof T>(obj: T, keys: Readonly
   const set = new Set<keyof T>(keys as ReadonlyArray<keyof T>);
   const out = {} as Omit<T, K>;
   (Object.keys(obj) as Array<keyof T>).forEach(k => {
-    if (!set.has(k)) (out as any)[k] = (obj as any)[k];
+    if (!set.has(k)) {
+      (out as Record<string, unknown>)[k as string] = obj[k];
+    }
   });
   return out;
 }

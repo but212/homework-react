@@ -1,5 +1,5 @@
 import { cn } from '@/lib/utils';
-import { type CardData } from '../../../lib/week3/card-data';
+import { type CardData } from '@/lib/week3/card-data';
 
 const Card = ({ card }: { card: CardData }) => {
   return (

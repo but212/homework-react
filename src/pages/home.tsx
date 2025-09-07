@@ -1,5 +1,6 @@
-import { cn } from '@/lib/utils';
 import { Link } from 'react-router-dom';
+
+import { cn } from '@/lib/utils';
 
 const Home = () => {
   return (

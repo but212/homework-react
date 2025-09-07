@@ -1,4 +1,5 @@
 import { createClient } from '@supabase/supabase-js';
+
 import type { Database, Tables, TablesInsert, TablesUpdate } from './database.types';
 
 // 환경 변수 가져오기
