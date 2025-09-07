@@ -101,13 +101,25 @@ export const useAuth = () => {
   }, [removeUser]);
 
   const refreshUser = useCallback(async () => {
-    if (!user?.id) return;
+    try {
+      const {
+        data: { user: currentUser },
+        error: userError,
+      } = await supabase.auth.getUser();
 
-    const profile = await fetchUserProfile(user.id);
-    if (profile) {
-      setUser(profile);
+      if (userError || !currentUser) {
+        console.error('사용자 세션 확인 실패:', userError?.message);
+        return;
+      }
+
+      const profile = await fetchUserProfile(currentUser.id);
+      if (profile) {
+        setUser(profile);
+      }
+    } catch (error) {
+      console.error('사용자 정보 새로고침 실패:', error);
     }
-  }, [user?.id, fetchUserProfile, setUser]);
+  }, [fetchUserProfile, setUser]);
 
   useEffect(() => {
     const initializeAuth = async () => {
