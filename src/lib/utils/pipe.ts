@@ -645,7 +645,6 @@ interface Pipe {
   <A, B, C, D, E>(f1: Fn<A, B>, f2: Fn<B, C>, f3: Fn<C, D>, f4: Fn<D, E>): Fn<A, E>;
   <A, B, C, D, E, F>(f1: Fn<A, B>, f2: Fn<B, C>, f3: Fn<C, D>, f4: Fn<D, E>, f5: Fn<E, F>): Fn<A, F>;
   <A, B, C, D, E, F, G>(f1: Fn<A, B>, f2: Fn<B, C>, f3: Fn<C, D>, f4: Fn<D, E>, f5: Fn<E, F>, f6: Fn<F, G>): Fn<A, G>;
-  // 극한 최적화된 재귀 타입 추론 - Head/Last 타입 완전 활용
   <T extends readonly Fn[]>(
     ...fns: T
   ): T extends readonly [Fn<infer A, any>, ...any[]] ? Fn<A, PipeOutput<T>> : Fn<unknown, unknown>;
