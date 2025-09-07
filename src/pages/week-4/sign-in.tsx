@@ -1,9 +1,8 @@
 import { useForm } from 'react-hook-form';
 import { useNavigate } from 'react-router-dom';
-import { toast } from 'sonner';
 
 import FormContainer from '@/components/FormContainer';
-import supabase from '@/lib/supabase';
+import { useAuth } from '@/hooks';
 import { cn } from '@/lib/utils';
 
 type LoginForm = {
@@ -13,6 +12,7 @@ type LoginForm = {
 
 const SignIn = () => {
   const navigate = useNavigate();
+  const { login, isLoading } = useAuth();
   const {
     register,
     handleSubmit,
@@ -23,40 +23,13 @@ const SignIn = () => {
   });
 
   const onSubmit = async (formData: LoginForm) => {
-    if (isSubmitting) return;
+    if (isSubmitting || isLoading) return;
 
-    const { error, data } = await supabase.auth.signInWithPassword({
-      email: formData.email,
-      password: formData.password,
-    });
+    const result = await login(formData.email, formData.password);
 
-    if (error) {
-      toast.error(`로그인 오류 발생 ${error.message}`);
-    } else {
-      if (data.user) {
-        const { error: profileError, data: profile } = await supabase
-          .from('profile')
-          .select('user_name')
-          .eq('id', data.user.id)
-          .single();
-
-        if (profileError) {
-          toast.error(`프로필 정보 오류: ${profileError.message}`);
-          return;
-        }
-
-        const displayName = profile?.user_name || data.user.user_metadata?.name || '사용자';
-
-        toast.success(`로그인 성공 ${displayName}`, {
-          action: {
-            label: '홈으로 이동',
-            onClick: () => {
-              navigate('/week-4/home');
-              reset();
-            },
-          },
-        });
-      }
+    if (result.success) {
+      navigate('/week-4/home');
+      reset();
     }
   };
 
@@ -107,13 +80,13 @@ const SignIn = () => {
         </div>
         <button
           type='submit'
-          aria-disabled={isSubmitting}
+          aria-disabled={isSubmitting || isLoading}
           className={cn(
             'cursor-pointer w-full bg-blue-600 text-white py-2 rounded hover:bg-blue-700 transition',
             'aria-disabled:cursor-not-allowed aria-disabled:opacity-50'
           )}
         >
-          {isSubmitting ? '로그인 중...' : '로그인'}
+          {isSubmitting || isLoading ? '로그인 중...' : '로그인'}
         </button>
       </form>
     </FormContainer>

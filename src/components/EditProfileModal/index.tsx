@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { toast } from 'sonner';
 
+import { useAuth } from '@/hooks/use-auth';
 import { type PartialProfile } from '@/lib/supabase';
 import { cn } from '@/lib/utils';
 import { updateUserEmail, updateUserPassword } from '@/lib/utils/auth';
@@ -24,6 +25,7 @@ interface ProfileForm {
 const EditProfileModal = ({ isOpen, onClose, user }: Props) => {
   const [isDirty, setIsDirty] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const { refreshUser, setUser } = useAuth();
   const {
     register,
     handleSubmit,
@@ -85,9 +87,13 @@ const EditProfileModal = ({ isOpen, onClose, user }: Props) => {
 
     try {
       setIsSubmitting(true);
+      let hasChanges = false;
+      const updatedUser = { ...user };
 
       if (data.email !== user.email) {
         await updateUserEmail(data.email);
+        updatedUser.email = data.email;
+        hasChanges = true;
         toast.success('이메일이 성공적으로 업데이트되었습니다.');
       }
 
@@ -100,6 +106,8 @@ const EditProfileModal = ({ isOpen, onClose, user }: Props) => {
         await updateProfile({
           user_name: data.name,
         });
+        updatedUser.user_name = data.name;
+        hasChanges = true;
         toast.success('이름이 성공적으로 업데이트되었습니다.');
       }
 
@@ -107,10 +115,19 @@ const EditProfileModal = ({ isOpen, onClose, user }: Props) => {
         await updateProfile({
           bio: data.bio,
         });
+        updatedUser.bio = data.bio;
+        hasChanges = true;
         toast.success('소개가 성공적으로 업데이트되었습니다.');
       }
 
+      // 즉시 로컬 상태 업데이트
+      if (hasChanges) {
+        setUser(updatedUser);
+      }
+
       setIsDirty(false);
+      // 서버와 동기화를 위한 백그라운드 새로고침
+      refreshUser();
       onClose();
     } catch (error) {
       console.error('프로필 업데이트 실패:', error);

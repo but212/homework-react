@@ -294,3 +294,367 @@ $$;
 
 프로필 수정기능을 구현하기 위해 EditProfileModal 컴포넌트를 구현해서 profile 페이지에서 isOpen prop을 통해 동적으로 불러올 수 있도록 했습니다.
 그리고 auth의 updateUser 함수를 이용한 Auth 사용자 정보 수정과 updateProfile 함수를 이용한 profile 테이블 정보 수정을 구현했습니다.
+
+## useAuth, usePersist 훅
+
+인증 관련 부수효과가 너무 복잡하고 중복이 많아 이걸 중앙화 시키는 훅의 필요성이 커졌습니다.
+
+```tsx
+export const useAuth = () => {
+  const [user, setUser, removeUser] = usePersist<PartialProfile | null>('week4_user', null);
+  
+  const [isLoading, , , setIsLoadingImmediate] = usePersist<boolean>('week4_auth_loading', true);
+
+  const fetchUserProfile = useCallback(async (userId: string): Promise<PartialProfile | null> => {
+    try {
+      const { error: userProfileError, data: userProfile } = await supabase
+        .from('profile')
+        .select('*')
+        .eq('id', userId)
+        .single();
+
+      if (userProfileError) {
+        console.error('사용자 프로필 오류:', userProfileError.message);
+        toast.error(`사용자 프로필 오류: ${userProfileError.message}`);
+        return null;
+      }
+
+      return userProfile;
+    } catch (error) {
+      console.error('프로필 조회 실패:', error);
+      return null;
+    }
+  }, []);
+
+  const login = useCallback(async (email: string, password: string) => {
+    setIsLoadingImmediate(true);
+    
+    try {
+      const { error, data } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
+
+      if (error) {
+        toast.error(`로그인 오류 발생 ${error.message}`);
+        return { success: false, error: error.message };
+      }
+
+      if (data.user) {
+        const profile = await fetchUserProfile(data.user.id);
+        
+        if (profile) {
+          setUser(profile);
+          const displayName = profile.user_name || data.user.user_metadata?.name || '사용자';
+          toast.success(`로그인 성공 ${displayName}`);
+          return { success: true, user: profile };
+        }
+      }
+
+      return { success: false, error: '사용자 정보를 가져올 수 없습니다.' };
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : '알 수 없는 오류가 발생했습니다.';
+      toast.error(`로그인 실패: ${errorMessage}`);
+      return { success: false, error: errorMessage };
+    } finally {
+      setIsLoadingImmediate(false);
+    }
+  }, [fetchUserProfile, setUser, setIsLoadingImmediate]);
+
+  const logout = useCallback(async () => {
+    try {
+      const { error } = await supabase.auth.signOut();
+
+      if (error) {
+        toast.error(`로그아웃 실패: ${error.message}`);
+        return { success: false, error: error.message };
+      }
+
+      // localStorage에서 사용자 정보 제거
+      removeUser();
+      toast.success('로그아웃 되었습니다.');
+      return { success: true };
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : '알 수 없는 오류가 발생했습니다.';
+      toast.error(`로그아웃 실패: ${errorMessage}`);
+      return { success: false, error: errorMessage };
+    }
+  }, [removeUser]);
+
+  const refreshUser = useCallback(async () => {
+    if (!user?.id) return;
+
+    const profile = await fetchUserProfile(user.id);
+    if (profile) {
+      setUser(profile);
+    }
+  }, [user?.id, fetchUserProfile, setUser]);
+
+  useEffect(() => {
+    const initializeAuth = async () => {
+      try {
+        const {
+          data: { session },
+          error,
+        } = await supabase.auth.getSession();
+
+        if (error) {
+          console.error('세션 확인 오류:', error.message);
+          removeUser();
+          return;
+        }
+
+        if (session?.user) {
+          if (!user) {
+            const profile = await fetchUserProfile(session.user.id);
+            if (profile) {
+              setUser(profile);
+            }
+          }
+        } else {
+          if (user) {
+            removeUser();
+          }
+        }
+      } catch (error) {
+        console.error('인증 초기화 실패:', error);
+        removeUser();
+      } finally {
+        setIsLoadingImmediate(false);
+      }
+    };
+
+    initializeAuth();
+
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange(async (event, session) => {
+      switch (event) {
+        case 'SIGNED_IN':
+          if (session?.user) {
+            const profile = await fetchUserProfile(session.user.id);
+            if (profile) {
+              setUser(profile);
+            }
+          }
+          break;
+        case 'SIGNED_OUT':
+          removeUser();
+          break;
+        default:
+          break;
+      }
+    });
+
+    return () => {
+      subscription.unsubscribe();
+    };
+  }, [user, fetchUserProfile, setUser, removeUser, setIsLoadingImmediate]);
+
+  return {
+    user,
+    isLoading,
+    login,
+    logout,
+    refreshUser,
+    setUser,
+  };
+};
+```
+
+그리고 로그인 여부를 저장하는 기능을 구현하지 않았습니다. 이건 UX 측면에서 매우 불편할 수 있기에 `usePersist`를 활용해서 저장하는 방식을
+구현했습니다.
+
+```tsx
+export default function usePersist<T>(key: string, initialValue: T, options: PersistOptions<T> = {}) {
+  const {
+    serializer = {
+      parse: JSON.parse,
+      stringify: JSON.stringify,
+    },
+    debounceMs = 300,
+    syncAcrossTabs = true,
+  } = options;
+
+  const isClient = typeof window !== 'undefined' && !!window.localStorage;
+
+  const isInternalUpdate = useRef(false);
+
+  const [value, setValue] = useState<T>(() => {
+    if (!isClient) return initialValue;
+    try {
+      const savedValue = localStorage.getItem(key);
+      return savedValue != null ? serializer.parse(savedValue) : initialValue;
+    } catch (error) {
+      console.warn(`Error reading localStorage key "${key}":`, error);
+      return initialValue;
+    }
+  });
+
+  type DebouncedFunction = ((...args: unknown[]) => void) & { cancel: () => void };
+
+  const debouncedWrite = useRef<DebouncedFunction>(
+    debounce((...args: unknown[]) => {
+      const [k, v] = args as [string, T];
+      if (!isClient) return;
+      try {
+        localStorage.setItem(k, serializer.stringify(v));
+      } catch (error) {
+        console.warn(`Error setting localStorage key "${k}":`, error);
+      }
+    }, debounceMs) as DebouncedFunction
+  );
+
+  useEffect(() => {
+    if (isInternalUpdate.current) {
+      isInternalUpdate.current = false;
+      return;
+    }
+    debouncedWrite.current(key, value);
+  }, [key, value]);
+
+  useEffect(() => {
+    if (!isClient || !syncAcrossTabs) return;
+
+    const handleStorageChange = (e: StorageEvent) => {
+      if (e.key !== key) return;
+      try {
+        isInternalUpdate.current = true;
+        if (e.newValue === null) {
+          setValue(initialValue);
+        } else {
+          setValue(serializer.parse(e.newValue));
+        }
+      } catch (error) {
+        console.warn(`Error parsing storage event for key "${key}":`, error);
+        isInternalUpdate.current = false;
+      }
+    };
+
+    window.addEventListener('storage', handleStorageChange);
+    return () => {
+      window.removeEventListener('storage', handleStorageChange);
+    };
+  }, [key, initialValue, serializer, syncAcrossTabs, isClient]);
+
+  const removeValue = useCallback(() => {
+    if (!isClient) return;
+    try {
+      localStorage.removeItem(key);
+      setValue(initialValue);
+    } catch (error) {
+      console.warn(`Error removing localStorage key "${key}":`, error);
+    }
+  }, [key, initialValue, isClient]);
+
+  const setValueImmediate = useCallback(
+    (newValue: T | ((prev: T) => T)) => {
+      if (debouncedWrite.current && typeof debouncedWrite.current.cancel === 'function') {
+        debouncedWrite.current.cancel();
+      }
+      setValue(prev => {
+        const resolvedValue = typeof newValue === 'function' ? (newValue as (prev: T) => T)(prev) : newValue;
+
+        if (isClient) {
+          try {
+            localStorage.setItem(key, serializer.stringify(resolvedValue));
+          } catch (error) {
+            console.warn(`Error setting localStorage key "${key}" immediately:`, error);
+          }
+        }
+        return resolvedValue;
+      });
+    },
+    [key, serializer, isClient]
+  );
+
+  return [value, setValue, removeValue, setValueImmediate] as const;
+}
+```
+
+### 이를 통한 이점
+
+이를 구현하면 간단하게 useAuth()를 통해서 로그인 여부를 확인 및 조작하는 함수 및 변수를 사용할 수 있습니다.
+
+```tsx
+// 변경 전
+const [user, setUser] = useState<PartialProfile | null>(null);
+
+useEffect(() => {
+  const initializeAuth = async () => {
+    const {
+      data: { session },
+      error,
+    } = await supabase.auth.getSession();
+
+    if (error) {
+      console.error('세션 확인 오류:', error.message);
+      return;
+    }
+
+    if (session?.user) {
+      const { error: userProfileError, data: userProfile } = await supabase
+        .from('profile')
+        .select('*')
+        .eq('id', session.user.id)
+        .single();
+
+      if (userProfileError) {
+        toast.error(`사용자 프로필 오류: ${userProfileError.message}`);
+      } else {
+        setUser(userProfile);
+      }
+    }
+  };
+
+  initializeAuth();
+
+  const {
+    data: { subscription },
+  } = supabase.auth.onAuthStateChange(async (event, session) => {
+    switch (event) {
+      case 'SIGNED_IN':
+        if (session?.user) {
+          const { error: userProfileError, data: userProfile } = await supabase
+            .from('profile')
+            .select('*')
+            .eq('id', session.user.id)
+            .single();
+
+          if (userProfileError) {
+            toast.error(`사용자 프로필 오류: ${userProfileError.message}`);
+          } else {
+            setUser(userProfile);
+          }
+        }
+        break;
+      case 'SIGNED_OUT':
+        setUser(null);
+        break;
+      default:
+        break;
+    }
+  });
+  return () => {
+    subscription.unsubscribe();
+  };
+}, []);
+
+// ...
+onClick={async () => {
+  const { error } = await supabase.auth.signOut();
+
+  if (error) {
+    toast.error(`로그아웃 실패: ${error.message}`);
+  } else {
+    toast.success('로그아웃 되었습니다.');
+  }
+}}
+
+/// 변경 후
+const { user, logout } = useAuth();
+// ...
+onClick={logout}
+```
+
+이를 통한 중앙화는 디버깅의 이점과 중복코드를 줄이는 이점이 있습니다.

@@ -1,77 +1,15 @@
-import { useEffect, useState } from 'react';
 import { Link, Outlet, Route, Routes } from 'react-router-dom';
-import { toast } from 'sonner';
 
 import Home from './home';
 import Profile from './profile';
 import SignIn from './sign-in';
 import SignUp from './sign-up';
 
-import supabase, { type PartialProfile } from '@/lib/supabase';
+import { useAuth } from '@/hooks';
 import { cn } from '@/lib/utils';
 
 const Week4 = () => {
-  const [user, setUser] = useState<PartialProfile | null>(null);
-
-  useEffect(() => {
-    const initializeAuth = async () => {
-      const {
-        data: { session },
-        error,
-      } = await supabase.auth.getSession();
-
-      if (error) {
-        console.error('세션 확인 오류:', error.message);
-        return;
-      }
-
-      if (session?.user) {
-        const { error: userProfileError, data: userProfile } = await supabase
-          .from('profile')
-          .select('*')
-          .eq('id', session.user.id)
-          .single();
-
-        if (userProfileError) {
-          toast.error(`사용자 프로필 오류: ${userProfileError.message}`);
-        } else {
-          setUser(userProfile);
-        }
-      }
-    };
-
-    initializeAuth();
-
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange(async (event, session) => {
-      switch (event) {
-        case 'SIGNED_IN':
-          if (session?.user) {
-            const { error: userProfileError, data: userProfile } = await supabase
-              .from('profile')
-              .select('*')
-              .eq('id', session.user.id)
-              .single();
-
-            if (userProfileError) {
-              toast.error(`사용자 프로필 오류: ${userProfileError.message}`);
-            } else {
-              setUser(userProfile);
-            }
-          }
-          break;
-        case 'SIGNED_OUT':
-          setUser(null);
-          break;
-        default:
-          break;
-      }
-    });
-    return () => {
-      subscription.unsubscribe();
-    };
-  }, []);
+  const { user, logout } = useAuth();
 
   return (
     <>
@@ -87,15 +25,7 @@ const Week4 = () => {
             </Link>
             <button
               type='button'
-              onClick={async () => {
-                const { error } = await supabase.auth.signOut();
-
-                if (error) {
-                  toast.error(`로그아웃 실패: ${error.message}`);
-                } else {
-                  toast.success('로그아웃 되었습니다.');
-                }
-              }}
+              onClick={() => logout()}
               className='p-2 bg-gray-200 rounded hover:bg-gray-300 transition'
             >
               로그아웃
