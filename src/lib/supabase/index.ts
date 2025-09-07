@@ -2,17 +2,23 @@ import { createClient } from '@supabase/supabase-js';
 
 import type { Database, Tables, TablesInsert, TablesUpdate } from './database.types';
 
-// 환경 변수 가져오기
-const { VITE_SUPABASE_URL, VITE_SUPABASE_API_KEY } = import.meta.env;
+const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+const supabaseAnonKey = import.meta.env.VITE_SUPABASE_API_KEY;
 
-// Supabase 클라이언트 인스턴스
-const supabase = createClient<Database>(VITE_SUPABASE_URL, VITE_SUPABASE_API_KEY);
+if (!supabaseUrl) {
+  throw new Error('VITE_SUPABASE_URL is not defined in environment variables');
+}
 
-// 인스턴스 기본 내보내기
+if (!supabaseAnonKey) {
+  throw new Error('VITE_SUPABASE_API_KEY is not defined in environment variables');
+}
+
+const supabase = createClient<Database>(supabaseUrl, supabaseAnonKey);
+
 export default supabase;
 
 // Profile 타입 내보내기
-export type Profile = Tables<'profiles'>;
-export type ProfileInsert = TablesInsert<'profiles'>;
-export type ProfileUpdate = TablesUpdate<'profiles'>;
+export type Profile = Tables<'profile'>;
+export type ProfileInsert = TablesInsert<'profile'>;
+export type ProfileUpdate = TablesUpdate<'profile'>;
 export type PartialProfile = Partial<Profile>;
