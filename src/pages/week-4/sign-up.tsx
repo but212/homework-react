@@ -41,6 +41,7 @@ const SignUp = () => {
           name: formData.name,
           bio: formData.bio,
         },
+        emailRedirectTo: `${window.location.origin}/week-4/home`,
       },
     });
 
