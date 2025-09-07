@@ -233,6 +233,7 @@ const EditProfileModal = ({ isOpen, onClose, user }: Props) => {
               type='password'
               id='edit-profile-modal-password'
               className={cn('w-full p-2 border rounded-md', errors.password ? 'border-red-500' : 'border-gray-300')}
+              autoComplete='off'
               {...register('password', {
                 minLength: {
                   value: 6,
@@ -253,6 +254,7 @@ const EditProfileModal = ({ isOpen, onClose, user }: Props) => {
             <input
               type='password'
               id='edit-profile-modal-confirm-password'
+              autoComplete='off'
               className={cn(
                 'w-full p-2 border rounded-md',
                 errors.confirmPassword ? 'border-red-500' : 'border-gray-300'
