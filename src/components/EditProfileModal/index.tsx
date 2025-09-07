@@ -25,6 +25,7 @@ interface ProfileForm {
 const EditProfileModal = ({ isOpen, onClose, user }: Props) => {
   const [isDirty, setIsDirty] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [initialUser, setInitialUser] = useState<PartialProfile | null>(null);
   const { refreshUser, setUser } = useAuth();
   const {
     register,
@@ -46,7 +47,8 @@ const EditProfileModal = ({ isOpen, onClose, user }: Props) => {
   const watchedFields = watch();
 
   useEffect(() => {
-    if (user && isOpen) {
+    if (user && isOpen && (!initialUser || initialUser.id !== user.id)) {
+      setInitialUser(user);
       reset({
         name: user.user_name,
         email: user.email,
@@ -56,28 +58,30 @@ const EditProfileModal = ({ isOpen, onClose, user }: Props) => {
       });
       setIsDirty(false);
     }
-  }, [user, isOpen, reset]);
+  }, [user, isOpen, reset, initialUser]);
 
   useEffect(() => {
-    if (user && isOpen) {
+    if (initialUser && isOpen) {
       const hasChanged =
-        watchedFields.name !== user.user_name ||
-        watchedFields.email !== user.email ||
-        watchedFields.bio !== (user.bio || '') ||
+        watchedFields.name !== initialUser.user_name ||
+        watchedFields.email !== initialUser.email ||
+        watchedFields.bio !== (initialUser.bio || '') ||
         Boolean(watchedFields.password && watchedFields.password.length > 0);
 
       setIsDirty(hasChanged);
     }
-  }, [watchedFields, user, isOpen]);
+  }, [watchedFields, initialUser, isOpen]);
 
   const handleClose = () => {
     if (isDirty) {
       const result = window.confirm('변경사항이 있습니다. 정말로 닫으시겠습니까?');
       if (result) {
         setIsDirty(false);
+        setInitialUser(null);
         onClose();
       }
     } else {
+      setInitialUser(null);
       onClose();
     }
   };
@@ -139,6 +143,7 @@ const EditProfileModal = ({ isOpen, onClose, user }: Props) => {
         console.error('사용자 정보 새로고침 실패:', error);
       }
 
+      setInitialUser(null);
       onClose();
     }
   };
