@@ -41,7 +41,7 @@ const SignUp = () => {
           name: formData.name,
           bio: formData.bio,
         },
-        emailRedirectTo: `${window.location.origin}/week-4/home`,
+        emailRedirectTo: `https://homework-react-gold.vercel.app/week-4/home`,
       },
     });
 
@@ -49,27 +49,25 @@ const SignUp = () => {
       toast.error(`회원가입 오류 발생 ${error.message}`);
     } else {
       if (data.user) {
-        await new Promise(resolve => setTimeout(resolve, 1000));
+        if (!data.session) {
+          toast.success(`회원가입이 완료되었습니다. 이메일을 확인하여 계정을 활성화해주세요.`);
+          reset();
+          return;
+        }
 
-        const { data: sessionData } = await supabase.auth.getSession();
+        const { error: profileError } = await supabase.from('profile').insert({
+          id: data.user.id,
+          user_name: formData.name,
+          email: data.user.email!,
+          phone: '',
+          bio: formData.bio || '',
+        });
 
-        if (sessionData.session) {
-          const { error: profileError } = await supabase.from('profile').insert({
-            id: data.user.id,
-            user_name: formData.name,
-            email: data.user.email!,
-            phone: '',
-            bio: formData.bio || '',
-          });
-
-          if (profileError) {
-            toast.error(`프로필 생성 오류: ${profileError.message}`);
-          } else {
-            toast.success(`회원가입 성공 ${formData.name}`);
-            reset();
-          }
+        if (profileError) {
+          toast.error(`프로필 생성 오류: ${profileError.message}`);
         } else {
-          toast.error('세션 생성에 실패했습니다. 다시 시도해주세요.');
+          toast.success(`회원가입 성공 ${formData.name}`);
+          reset();
         }
       } else {
         toast.error('회원정보를 저장할 수 없습니다.');
