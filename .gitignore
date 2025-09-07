@@ -152,3 +152,5 @@ bun.lock
 .cache/bun-*
 bunfig.local.toml
 bun-out/
+
+.vercel

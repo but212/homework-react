@@ -295,267 +295,9 @@ $$;
 프로필 수정기능을 구현하기 위해 EditProfileModal 컴포넌트를 구현해서 profile 페이지에서 isOpen prop을 통해 동적으로 불러올 수 있도록 했습니다.
 그리고 auth의 updateUser 함수를 이용한 Auth 사용자 정보 수정과 updateProfile 함수를 이용한 profile 테이블 정보 수정을 구현했습니다.
 
-## useAuth, usePersist 훅
+## useAuth 훅
 
 인증 관련 부수효과가 너무 복잡하고 중복이 많아 이걸 중앙화 시키는 훅의 필요성이 커졌습니다.
-
-```tsx
-export const useAuth = () => {
-  const [user, setUser, removeUser] = usePersist<PartialProfile | null>('week4_user', null);
-  
-  const [isLoading, , , setIsLoadingImmediate] = usePersist<boolean>('week4_auth_loading', true);
-
-  const fetchUserProfile = useCallback(async (userId: string): Promise<PartialProfile | null> => {
-    try {
-      const { error: userProfileError, data: userProfile } = await supabase
-        .from('profile')
-        .select('*')
-        .eq('id', userId)
-        .single();
-
-      if (userProfileError) {
-        console.error('사용자 프로필 오류:', userProfileError.message);
-        toast.error(`사용자 프로필 오류: ${userProfileError.message}`);
-        return null;
-      }
-
-      return userProfile;
-    } catch (error) {
-      console.error('프로필 조회 실패:', error);
-      return null;
-    }
-  }, []);
-
-  const login = useCallback(async (email: string, password: string) => {
-    setIsLoadingImmediate(true);
-    
-    try {
-      const { error, data } = await supabase.auth.signInWithPassword({
-        email,
-        password,
-      });
-
-      if (error) {
-        toast.error(`로그인 오류 발생 ${error.message}`);
-        return { success: false, error: error.message };
-      }
-
-      if (data.user) {
-        const profile = await fetchUserProfile(data.user.id);
-        
-        if (profile) {
-          setUser(profile);
-          const displayName = profile.user_name || data.user.user_metadata?.name || '사용자';
-          toast.success(`로그인 성공 ${displayName}`);
-          return { success: true, user: profile };
-        }
-      }
-
-      return { success: false, error: '사용자 정보를 가져올 수 없습니다.' };
-    } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : '알 수 없는 오류가 발생했습니다.';
-      toast.error(`로그인 실패: ${errorMessage}`);
-      return { success: false, error: errorMessage };
-    } finally {
-      setIsLoadingImmediate(false);
-    }
-  }, [fetchUserProfile, setUser, setIsLoadingImmediate]);
-
-  const logout = useCallback(async () => {
-    try {
-      const { error } = await supabase.auth.signOut();
-
-      if (error) {
-        toast.error(`로그아웃 실패: ${error.message}`);
-        return { success: false, error: error.message };
-      }
-
-      // localStorage에서 사용자 정보 제거
-      removeUser();
-      toast.success('로그아웃 되었습니다.');
-      return { success: true };
-    } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : '알 수 없는 오류가 발생했습니다.';
-      toast.error(`로그아웃 실패: ${errorMessage}`);
-      return { success: false, error: errorMessage };
-    }
-  }, [removeUser]);
-
-  const refreshUser = useCallback(async () => {
-    if (!user?.id) return;
-
-    const profile = await fetchUserProfile(user.id);
-    if (profile) {
-      setUser(profile);
-    }
-  }, [user?.id, fetchUserProfile, setUser]);
-
-  useEffect(() => {
-    const initializeAuth = async () => {
-      try {
-        const {
-          data: { session },
-          error,
-        } = await supabase.auth.getSession();
-
-        if (error) {
-          console.error('세션 확인 오류:', error.message);
-          removeUser();
-          return;
-        }
-
-        if (session?.user) {
-          if (!user) {
-            const profile = await fetchUserProfile(session.user.id);
-            if (profile) {
-              setUser(profile);
-            }
-          }
-        } else {
-          if (user) {
-            removeUser();
-          }
-        }
-      } catch (error) {
-        console.error('인증 초기화 실패:', error);
-        removeUser();
-      } finally {
-        setIsLoadingImmediate(false);
-      }
-    };
-
-    initializeAuth();
-
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange(async (event, session) => {
-      switch (event) {
-        case 'SIGNED_IN':
-          if (session?.user) {
-            const profile = await fetchUserProfile(session.user.id);
-            if (profile) {
-              setUser(profile);
-            }
-          }
-          break;
-        case 'SIGNED_OUT':
-          removeUser();
-          break;
-        default:
-          break;
-      }
-    });
-
-    return () => {
-      subscription.unsubscribe();
-    };
-  }, [user, fetchUserProfile, setUser, removeUser, setIsLoadingImmediate]);
-
-  return {
-    user,
-    isLoading,
-    login,
-    logout,
-    refreshUser,
-    setUser,
-  };
-};
-```
-
-### 이를 통한 이점
-
-이를 구현하면 간단하게 useAuth()를 통해서 로그인 여부를 확인 및 조작하는 함수 및 변수를 사용할 수 있습니다.
-
-```tsx
-// 변경 전
-const [user, setUser] = useState<PartialProfile | null>(null);
-
-useEffect(() => {
-  const initializeAuth = async () => {
-    const {
-      data: { session },
-      error,
-    } = await supabase.auth.getSession();
-
-    if (error) {
-      console.error('세션 확인 오류:', error.message);
-      return;
-    }
-
-    if (session?.user) {
-      const { error: userProfileError, data: userProfile } = await supabase
-        .from('profile')
-        .select('*')
-        .eq('id', session.user.id)
-        .single();
-
-      if (userProfileError) {
-        toast.error(`사용자 프로필 오류: ${userProfileError.message}`);
-      } else {
-        setUser(userProfile);
-      }
-    }
-  };
-
-  initializeAuth();
-
-  const {
-    data: { subscription },
-  } = supabase.auth.onAuthStateChange(async (event, session) => {
-    switch (event) {
-      case 'SIGNED_IN':
-        if (session?.user) {
-          const { error: userProfileError, data: userProfile } = await supabase
-            .from('profile')
-            .select('*')
-            .eq('id', session.user.id)
-            .single();
-
-          if (userProfileError) {
-            toast.error(`사용자 프로필 오류: ${userProfileError.message}`);
-          } else {
-            setUser(userProfile);
-          }
-        }
-        break;
-      case 'SIGNED_OUT':
-        setUser(null);
-        break;
-      default:
-        break;
-    }
-  });
-  return () => {
-    subscription.unsubscribe();
-  };
-}, []);
-
-// ...
-onClick={async () => {
-  const { error } = await supabase.auth.signOut();
-
-  if (error) {
-    toast.error(`로그아웃 실패: ${error.message}`);
-  } else {
-    toast.success('로그아웃 되었습니다.');
-  }
-}}
-
-/// 변경 후
-const { user, logout } = useAuth();
-// ...
-onClick={logout}
-```
-
-이를 통한 중앙화는 디버깅의 이점과 중복코드를 줄이는 이점이 있습니다.
-
-## 해결하지 못한 문제점 - 인증상태 확인 무한 로딩
-
-로그인 후 새로 고침을 하고 다시 로그인 한 상태에서 UI가 굳는데 이 상태로 새로 고침하면 무한 로딩하는 문제가 발생하였습니다.
-
-## 로그인 유지 포기
-
-로그인 유지를 localStorage로 구현하려고 했으나 실패한것 같습니다. 원래 이는 JWT 토큰을 활용하여 토큰 만료기간 동안만 로그인 유지하는 방법을 구현해야 합니다. 결국 useAuth는 usePersist가 제거하였습니다.
 
 ```tsx
 export const useAuth = () => {
@@ -760,6 +502,91 @@ export const useAuth = () => {
     refreshUser,
   };
 };
+```
+
+### 이를 통한 이점
+
+이를 구현하면 간단하게 useAuth()를 통해서 로그인 여부를 확인 및 조작하는 함수 및 변수를 사용할 수 있습니다.
+
+```tsx
+// 변경 전
+const [user, setUser] = useState<PartialProfile | null>(null);
+
+useEffect(() => {
+  const initializeAuth = async () => {
+    const {
+      data: { session },
+      error,
+    } = await supabase.auth.getSession();
+
+    if (error) {
+      console.error('세션 확인 오류:', error.message);
+      return;
+    }
+
+    if (session?.user) {
+      const { error: userProfileError, data: userProfile } = await supabase
+        .from('profile')
+        .select('*')
+        .eq('id', session.user.id)
+        .single();
+
+      if (userProfileError) {
+        toast.error(`사용자 프로필 오류: ${userProfileError.message}`);
+      } else {
+        setUser(userProfile);
+      }
+    }
+  };
+
+  initializeAuth();
+
+  const {
+    data: { subscription },
+  } = supabase.auth.onAuthStateChange(async (event, session) => {
+    switch (event) {
+      case 'SIGNED_IN':
+        if (session?.user) {
+          const { error: userProfileError, data: userProfile } = await supabase
+            .from('profile')
+            .select('*')
+            .eq('id', session.user.id)
+            .single();
+
+          if (userProfileError) {
+            toast.error(`사용자 프로필 오류: ${userProfileError.message}`);
+          } else {
+            setUser(userProfile);
+          }
+        }
+        break;
+      case 'SIGNED_OUT':
+        setUser(null);
+        break;
+      default:
+        break;
+    }
+  });
+  return () => {
+    subscription.unsubscribe();
+  };
+}, []);
+
+// ...
+onClick={async () => {
+  const { error } = await supabase.auth.signOut();
+
+  if (error) {
+    toast.error(`로그아웃 실패: ${error.message}`);
+  } else {
+    toast.success('로그아웃 되었습니다.');
+  }
+}}
+
+/// 변경 후
+const { user, logout } = useAuth();
+// ...
+onClick={logout}
 ```
 
 ## 느낀점
