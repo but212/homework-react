@@ -8,6 +8,7 @@ import { cn } from '@/lib/utils';
 import { updateUserEmail, updateUserPassword } from '@/lib/utils/auth';
 import { pipe, pipeIf } from '@/lib/utils/pipe';
 import { updateProfile } from '@/lib/utils/profile';
+import { useRef } from 'react';
 
 interface Props {
   isOpen: boolean;
@@ -28,6 +29,8 @@ const EditProfileModal = ({ isOpen, onClose, user }: Props) => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [initialUser, setInitialUser] = useState<PartialProfile | null>(null);
   const { refreshUser } = useAuth();
+  const modalRef = useRef<HTMLDivElement>(null);
+
   const {
     register,
     handleSubmit,
@@ -72,6 +75,45 @@ const EditProfileModal = ({ isOpen, onClose, user }: Props) => {
       setIsDirty(hasChanged);
     }
   }, [watchedFields, initialUser, isOpen]);
+
+  // Focus trap
+  useEffect(() => {
+    if (!isOpen) return;
+    const modal = modalRef.current;
+    if (!modal) return;
+
+    const focusableSelectors =
+      'a[href], area[href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), button:not([disabled]), [tabindex]:not([tabindex="-1"])';
+    const focusableEls = modal.querySelectorAll<HTMLElement>(focusableSelectors);
+    const firstElement = focusableEls[0];
+    const lastElement = focusableEls[focusableEls.length - 1];
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Tab') {
+        if (focusableEls.length === 0) return;
+        if (e.shiftKey) {
+          if (document.activeElement === firstElement) {
+            e.preventDefault();
+            if (lastElement) lastElement.focus();
+          }
+        } else {
+          if (document.activeElement === lastElement) {
+            e.preventDefault();
+            if (firstElement) firstElement.focus();
+          }
+        }
+      }
+      if (e.key === 'Escape') {
+        handleClose();
+      }
+    };
+
+    document.addEventListener('keydown', handleKeyDown);
+
+    return () => {
+      document.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [isOpen, isDirty]);
 
   const handleClose = () => {
     if (isDirty) {
@@ -183,6 +225,7 @@ const EditProfileModal = ({ isOpen, onClose, user }: Props) => {
       onClick={handleClose}
     >
       <div
+        ref={modalRef}
         className={cn('bg-white', 'p-6', 'rounded-xl', 'w-4/5', 'h-4/5', 'shadow-lg', 'flex', 'flex-col')}
         onClick={e => e.stopPropagation()}
         role='dialog'
